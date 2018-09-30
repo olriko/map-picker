@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-  import { Vue, Component, Model, Emit } from 'vue-property-decorator';
+  import { Component, Model, Vue } from 'vue-property-decorator';
 
   @Component
   export default class CreateRoom extends Vue {
@@ -27,7 +27,7 @@
       'cobble',
     ];
 
-    @Model('change', { type: Array}) public value!: string[];
+    @Model('change', {type: Array}) public value!: string[];
 
     public toggle(map: string): void {
       if (this.value.includes(map)) {

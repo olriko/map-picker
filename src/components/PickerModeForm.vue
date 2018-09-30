@@ -4,7 +4,7 @@
     .modes
       .columns
         .column.is-half(v-for="mode in modes")
-          .mode.media(:class="{selected: true}")
+          .mode.media(:class="{selected: mode.uid === value}", @click="set(mode.uid)")
             figure.media-left
               p.image.is-64x64
                 img(src="https://bulma.io/images/placeholders/128x128.png")
@@ -24,12 +24,17 @@
 
     public modes: object[] = modes;
 
-    @Model('change', { type: Array}) public value!: string;
+    @Model('change', {type: String}) public value!: string;
+
+    public set(mode: string): void {
+      this.$emit('change', mode);
+    }
   }
 </script>
 
 <style lang="scss" scoped>
   .mode {
+    cursor: pointer;
     border: 2px solid transparent;
     border-radius: 5px;
     &.selected {
