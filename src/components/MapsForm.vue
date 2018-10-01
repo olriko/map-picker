@@ -4,17 +4,17 @@
     .control
       .maps.columns
         .column(v-for="map in maps")
-          .map(:class="{ selected: value.includes(map)}", @click="toggle(map)")
+          .map(:class="{ selected: value.includes(map), readonly: readonly}", @click="toggle(map)")
             img(:src="require(`@/assets/maps/${map}.jpg`)")
-
-
 </template>
 
 <script lang="ts">
-  import { Component, Model, Vue } from 'vue-property-decorator';
+  import {Component, Model, Prop, Vue} from 'vue-property-decorator';
 
   @Component
   export default class CreateRoom extends Vue {
+
+    @Prop({default: true, type: Boolean}) public readonly!: boolean;
 
     public readonly maps: string[] = [
       'dust2',
@@ -30,10 +30,14 @@
     @Model('change', {type: Array}) public value!: string[];
 
     public toggle(map: string): void {
-      if (this.value.includes(map)) {
-        this.value.splice(this.value.indexOf(map), 1);
-      } else {
-        this.value.push(map);
+      if (!this.readonly) {
+        if (this.value.includes(map)) {
+          if (this.value.length > 1) {
+            this.value.splice(this.value.indexOf(map), 1);
+          }
+        } else {
+          this.value.push(map);
+        }
       }
     }
   }
@@ -43,6 +47,10 @@
   .maps {
     .map {
       cursor: pointer;
+      &.readonly {
+        cursor: not-allowed!important;
+      }
+
       img {
         border-radius: 5px;
         border: 2px solid transparent;

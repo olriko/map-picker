@@ -2,7 +2,7 @@
   #room.section
     .columns
       .column.is-one-quarter
-        current-user-room
+        room-users(:room="room")
       .column
         label.label Share to your friends !
         .field.has-addons
@@ -10,46 +10,54 @@
             input.input(:value="currentHref")
           p.control
             button.button.is-success Copy
+        room-settings(v-if="room", :roomId="room.id")
 </template>
 
 <script lang="ts">
-  import {Component, Vue, Model} from 'vue-property-decorator';
-  import CurrentUserRoom from '@/components/CurrentUserRoom.vue';
+  import {Component, Vue} from 'vue-property-decorator';
+  import RoomUsers from '@/components/RoomUsers.vue';
+  import RoomSettings from '@/components/RoomSettings.vue';
   import firebase from 'firebase';
-  import Cookie from 'js-cookie';
-  import { DateTime } from 'luxon';
-  import RegisterModal from '@/components/RegisterModal.vue';
+  import {DateTime} from 'luxon';
+  import {mapGetters} from 'vuex';
 
   @Component({
     components: {
-      CurrentUserRoom,
+      RoomUsers,
+      RoomSettings,
+    },
+    computed: {
+      ...mapGetters(['uid', 'userRef', 'user']),
     },
   })
   export default class Room extends Vue {
     public currentHref: string = window.location.href;
-    public roomRef: any;
-    public userRef: any;
+    public roomRef: any = null;
+    public room: any = null;
 
-    public mounted(): void {
-      const userUid = Cookie.get('uid');
+    public async created(): Promise<void> {
       this.roomRef = firebase.database().ref(`rooms/${this.$route.params.id}`);
-      this.userRef = firebase.database().ref(`users/${userUid}`);
-      const userRoomRef = this.roomRef.child(`users/${userUid}`);
-
-      this.userRef.once('value').then((userData: any) => {
-        if (userData.val()) {
-         userRoomRef.once('value').then((userRoomData: any) => {
-            if (!userRoomData.val()) {
-              userRoomRef.push({...userData.val(), online_since: DateTime.local().toString()});
-            }
-          });
-        } else {
-          this.$modal.open({
-            component: RegisterModal,
-            canCancel: false,
-          });
+      this.roomRef.on('value', (snap) => {
+        if (snap.val()) {
+          this.room = {...snap.val(), id: this.$route.params.id};
         }
       });
+      await this.addCurrentUserToTheRoom();
+    }
+
+    public async addCurrentUserToTheRoom(): Promise<void> {
+      const usersRoomRef = this.roomRef.child(`users`);
+      const userRoomRef = usersRoomRef.child(this.uid);
+
+      const snap = await usersRoomRef.once('value');
+      const snapVal = snap.val();
+      if (!snapVal || (!snapVal[this.uid] && Object.keys(snapVal).length < 5)) {
+        userRoomRef.set({
+          ...this.user,
+          online: DateTime.local().toString(),
+          join_at: DateTime.local().toString(),
+        });
+      }
     }
   }
 </script>
